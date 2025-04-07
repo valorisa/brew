@@ -5,6 +5,7 @@ This guide provides detailed steps to build and use Homebrew from a Dockerfile. 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:
+
 - Docker: [Download and install Docker](https://www.docker.com/products/docker-desktop)
 
 ## Creating the Dockerfile
@@ -137,17 +138,20 @@ This command starts a new container in interactive mode and opens a bash shell.
 Inside the running container, you can use Homebrew commands as usual. Here are some examples:
 
 - **Check Homebrew version:**
+
   ```sh
   brew --version
   ```
 
 - **Update Homebrew and installed formulae:**
+
   ```sh
   brew update
   brew upgrade
   ```
 
 - **Install a package with Homebrew:**
+
   ```sh
   brew install wget
   ```
@@ -155,14 +159,17 @@ Inside the running container, you can use Homebrew commands as usual. Here are s
 ## Detaching and Reattaching to the Container
 
 To detach from the running container without stopping it, use the following key combination:
+
 - **CTRL + P, then CTRL + Q** or ```exit```
 
 To list running containers and find the container ID or name:
+
 ```sh
 docker ps
 ```
 
 To reattach to the running container:
+
 ```sh
 docker attach <container_id_or_name>
 ```
@@ -170,17 +177,21 @@ docker attach <container_id_or_name>
 ## Stopping and Restarting the Container
 
 To stop the running container:
+
 ```sh
 docker ps -as | grep <search_term> | awk '{print $1}' | xargs docker stop
 ```
+
 Replace `<search_term>` with a relevant term to filter the container you wish to stop.
 
 To restart the stopped container:
+
 ```sh
 docker start <container_id_or_name>
 ```
 
 To reattach to the restarted container:
+
 ```sh
 docker attach <container_id_or_name>
 ```
@@ -192,6 +203,7 @@ If you need to execute commands inside a running container without attaching to 
 ```sh
 docker ps -as | grep <search_term> | awk '{print $1}'
 ```
+
 Replace `<search_term>` with a relevant term to filter the container you wish to access.
 
 Then, use the container ID to run a command inside the container:
@@ -203,6 +215,7 @@ docker exec -it <container_id> /bin/bash
 ## Additional Resources
 
 For more information on Docker and Homebrew, refer to the following resources:
+
 - [Docker Documentation](https://docs.docker.com/)
 - [Homebrew Documentation](https://docs.brew.sh/)
 
