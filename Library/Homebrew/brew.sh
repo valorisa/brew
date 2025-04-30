@@ -65,7 +65,12 @@ else
   CACHE_HOME="${HOMEBREW_XDG_CACHE_HOME:-${HOME}/.cache}"
   HOMEBREW_DEFAULT_CACHE="${CACHE_HOME}/Homebrew"
   HOMEBREW_DEFAULT_LOGS="${CACHE_HOME}/Homebrew/Logs"
-  HOMEBREW_DEFAULT_TEMP="/tmp"
+  if [[ -r "/var/tmp" && -w "/var/tmp" ]]
+  then
+    HOMEBREW_DEFAULT_TEMP="/var/tmp"
+  else
+    HOMEBREW_DEFAULT_TEMP="/tmp"
+  fi
 fi
 
 realpath() {
@@ -104,6 +109,10 @@ HOMEBREW_CASKROOM="${HOMEBREW_PREFIX}/Caskroom"
 HOMEBREW_CACHE="${HOMEBREW_CACHE:-${HOMEBREW_DEFAULT_CACHE}}"
 HOMEBREW_LOGS="${HOMEBREW_LOGS:-${HOMEBREW_DEFAULT_LOGS}}"
 HOMEBREW_TEMP="${HOMEBREW_TEMP:-${HOMEBREW_DEFAULT_TEMP}}"
+if [[ ! -w "${HOMEBREW_TEMP}" ]]
+then
+  HOMEBREW_TEMP="${HOMEBREW_DEFAULT_TEMP}"
+fi
 
 # commands that take a single or no arguments.
 # HOMEBREW_LIBRARY set by bin/brew
@@ -456,7 +465,7 @@ fi
 #####
 
 # Docker image deprecation
-if [[ -f "${HOMEBREW_REPOSITORY}/.docker-deprecate" ]]
+if [[ -f "${HOMEBREW_REPOSITORY}/.docker-deprecate" && -z "${HOMEBREW_TESTS}" ]]
 then
   read -r DOCKER_DEPRECATION_MESSAGE <"${HOMEBREW_REPOSITORY}/.docker-deprecate"
   if [[ -n "${GITHUB_ACTIONS}" ]]

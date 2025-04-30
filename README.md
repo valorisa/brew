@@ -1,6 +1,7 @@
 # Homebrew
 
 [![GitHub release](https://img.shields.io/github/release/Homebrew/brew.svg)](https://github.com/Homebrew/brew/releases)
+[![License](https://img.shields.io/github/license/Homebrew/brew)](https://github.com/Homebrew/brew/blob/master/LICENSE.txt)
 
 Features, usage and installation instructions are [summarised on the homepage](https://brew.sh). Terminology (e.g. the difference between a Cellar, Tap, Cask and so forth) is [explained here](https://docs.brew.sh/Formula-Cookbook#homebrew-terminology).
 
@@ -33,6 +34,7 @@ For questions about donations, including corporate giving, please email the Home
 
 - [Homebrew/discussions (forum)](https://github.com/orgs/Homebrew/discussions)
 - [@homebrew@fosstodon.org (Mastodon)](https://fosstodon.org/@homebrew)
+- [@brew.sh (Bluesky)](https://bsky.app/profile/brew.sh)
 - [@MacHomebrew (𝕏 (formerly known as Twitter))](https://x.com/MacHomebrew)
 
 ## Contributing
@@ -83,6 +85,6 @@ Secure password storage and syncing is provided by [1Password for Teams](https:/
 [![DNSimple](https://cdn.dnsimple.com/assets/resolving-with-us/logo-light.png)](https://dnsimple.com/resolving/homebrew#gh-light-mode-only)
 [![DNSimple](https://cdn.dnsimple.com/assets/resolving-with-us/logo-dark.png)](https://dnsimple.com/resolving/homebrew#gh-dark-mode-only)
 
-Homebrew is generously supported by [GitHub](https://github.com/github), [Custom Ink](https://github.com/customink), [Randy Reddig](https://github.com/ydnar), [Codecademy](https://github.com/Codecademy), [MacPaw Inc.](https://github.com/MacPaw), [Workbrew](https://github.com/Workbrew) and many other users and organisations via [GitHub Sponsors](https://github.com/sponsors/Homebrew).
+Homebrew is generously supported by [GitHub](https://github.com/github), [Custom Ink](https://github.com/customink), [Randy Reddig](https://github.com/ydnar), [Codecademy](https://github.com/Codecademy), [Workbrew](https://github.com/Workbrew) and many other users and organisations via [GitHub Sponsors](https://github.com/sponsors/Homebrew).
 
 [![GitHub](https://github.com/github.png?size=64)](https://github.com/github)
