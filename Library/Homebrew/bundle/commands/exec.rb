@@ -1,6 +1,7 @@
 # typed: false # rubocop:todo Sorbet/TrueSigil
 # frozen_string_literal: true
 
+require "English"
 require "exceptions"
 require "extend/ENV"
 require "utils"
@@ -10,46 +11,13 @@ module Homebrew
   module Bundle
     module Commands
       module Exec
-        # Homebrew's global environment variables that we don't want to leak into
-        # the `brew bundle exec` environment.
-        HOMEBREW_ENV_CLEANUP = %w[
-          HOMEBREW_HELP_MESSAGE
-          HOMEBREW_API_DEFAULT_DOMAIN
-          HOMEBREW_BOTTLE_DEFAULT_DOMAIN
-          HOMEBREW_BREW_DEFAULT_GIT_REMOTE
-          HOMEBREW_CORE_DEFAULT_GIT_REMOTE
-          HOMEBREW_DEFAULT_CACHE
-          HOMEBREW_DEFAULT_LOGS
-          HOMEBREW_DEFAULT_TEMP
-          HOMEBREW_REQUIRED_RUBY_VERSION
-          HOMEBREW_PRODUCT
-          HOMEBREW_SYSTEM
-          HOMEBREW_PROCESSOR
-          HOMEBREW_PHYSICAL_PROCESSOR
-          HOMEBREW_BREWED_CURL_PATH
-          HOMEBREW_USER_AGENT_CURL
-          HOMEBREW_USER_AGENT
-          HOMEBREW_GENERIC_DEFAULT_PREFIX
-          HOMEBREW_GENERIC_DEFAULT_REPOSITORY
-          HOMEBREW_DEFAULT_PREFIX
-          HOMEBREW_DEFAULT_REPOSITORY
-          HOMEBREW_AUTO_UPDATE_COMMAND
-          HOMEBREW_BREW_GIT_REMOTE
-          HOMEBREW_COMMAND_DEPTH
-          HOMEBREW_CORE_GIT_REMOTE
-          HOMEBREW_MACOS_VERSION_NUMERIC
-          HOMEBREW_MINIMUM_GIT_VERSION
-          HOMEBREW_MACOS_NEWEST_UNSUPPORTED
-          HOMEBREW_MACOS_OLDEST_SUPPORTED
-          HOMEBREW_MACOS_OLDEST_ALLOWED
-          HOMEBREW_GITHUB_PACKAGES_AUTH
-        ].freeze
-
         PATH_LIKE_ENV_REGEX = /.+#{File::PATH_SEPARATOR}/
 
-        def self.run(*args, global: false, file: nil, subcommand: "", services: false)
-          # Cleanup Homebrew's global environment
-          HOMEBREW_ENV_CLEANUP.each { |key| ENV.delete(key) }
+        def self.run(*args, global: false, file: nil, subcommand: "", services: false, check: false)
+          if check
+            require "bundle/commands/check"
+            Homebrew::Bundle::Commands::Check.run(global:, file:, quiet: true)
+          end
 
           # Store the old environment so we can check if things were already set
           # before we start mutating it.
@@ -140,23 +108,66 @@ module Homebrew
             end
           end
 
-          # Ensure brew bundle sh/env commands have access to other tools in the PATH
-          if ["sh", "env"].include?(subcommand) && (homebrew_path = ENV.fetch("HOMEBREW_PATH", nil))
+          # Ensure brew bundle exec/sh/env commands have access to other tools in the PATH
+          if (homebrew_path = ENV.fetch("HOMEBREW_PATH", nil))
             ENV.append_path "PATH", homebrew_path
           end
 
           # For commands which aren't either absolute or relative
           raise "command was not found in your PATH: #{command}" if command.exclude?("/") && which(command).nil?
 
+          %w[HOMEBREW_TEMP TMPDIR HOMEBREW_TMPDIR].each do |var|
+            value = ENV.fetch(var, nil)
+            next if value.blank?
+            next if File.writable?(value)
+
+            ENV.delete(var)
+          end
+
+          ENV.each do |key, value|
+            # Look for PATH-like environment variables
+            next if key.exclude?("PATH") || !value.match?(PATH_LIKE_ENV_REGEX)
+
+            # Exclude Homebrew shims from the PATH as they don't work
+            # without all Homebrew environment variables and can interfere with
+            # non-Homebrew builds.
+            ENV[key] = PATH.new(value)
+                           .reject do |path_value|
+              path_value.include?("/Homebrew/shims/")
+            end.to_s
+          end
+
           if subcommand == "env"
             ENV.sort.each do |key, value|
+              # Skip exporting Homebrew internal variables that won't be used by other tools.
+              # Those Homebrew needs have already been set to global constants and/or are exported again later.
+              # Setting these globally can interfere with nested Homebrew invocations/environments.
+              if key.start_with?("HOMEBREW_", "PORTABLE_RUBY_")
+                ENV.delete(key)
+                next
+              end
+
               # No need to export empty values.
               next if value.blank?
 
-              # Skip exporting non-Homebrew things that were already set in the old environment.
-              next if !key.start_with?("HOMEBREW_") && old_env.key?(key) && old_env[key] == value
+              # Skip exporting things that were the same in the old environment.
+              old_value = old_env[key]
+              next if old_value == value
 
-              puts "export #{key}=\"#{Utils::Shell.sh_quote(value)}\""
+              # Look for PATH-like environment variables
+              if key.include?("PATH") && value.match?(PATH_LIKE_ENV_REGEX)
+                old_values = old_value.to_s.split(File::PATH_SEPARATOR)
+                path = PATH.new(value)
+                           .reject do |path_value|
+                  # Exclude existing/old values as they've already been exported.
+                  old_values.include?(path_value)
+                end
+                next if path.blank?
+
+                puts "export #{key}=\"#{Utils::Shell.sh_quote(path.to_s)}:${#{key}:-}\""
+              else
+                puts "export #{key}=\"#{Utils::Shell.sh_quote(value)}\""
+              end
             end
             return
           end

@@ -20,9 +20,16 @@ else
   end
 
   # This list should match .gitignore
-  vendored_versions = ["3.3"].freeze
+  vendored_versions = ["3.4"].freeze
   vendored_versions.include?("#{ruby_major}.#{ruby_minor}")
 end.freeze
+
+# TODO(odeprecated): remove `respond_to?` check when required Ruby >= 3.4
+if ENV["HOMEBREW_DEVELOPER"] && Warning.respond_to?(:categories)
+  Warning.categories.each do |category|
+    Warning[category] = true
+  end
+end
 
 # Setup Homebrew::FastBootRequire for faster boot requires.
 # Inspired by https://github.com/Shopify/bootsnap/wiki/Bootlib::Require
