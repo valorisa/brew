@@ -164,6 +164,7 @@
 !/completions
 !/docs
 !/manpages
+!/CODEOWNERS
 
 # Unignore our packaging files
 !/package

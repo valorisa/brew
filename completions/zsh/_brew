@@ -566,7 +566,7 @@ _brew_bump_cask_pr() {
     '--fork-org[Use the specified GitHub organization for forking]' \
     '--help[Show this message]' \
     '--message[Prepend message to the default pull request message]' \
-    '(--online)--no-audit[Don'\''t run `brew audit` before opening the PR]' \
+    '--no-audit[Don'\''t run `brew audit` before opening the PR]' \
     '--no-browse[Print the pull request URL instead of opening in a browser]' \
     '--no-fork[Don'\''t try to fork the repository]' \
     '--no-style[Don'\''t run `brew style --fix` before opening the PR]' \
