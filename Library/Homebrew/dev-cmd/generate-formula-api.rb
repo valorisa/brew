@@ -32,7 +32,7 @@ module Homebrew
         raise TapUnavailableError, tap.name unless tap.installed?
 
         unless args.dry_run?
-          directories = ["_data/formula", "api/formula", "formula", "api/internal/v3"]
+          directories = ["_data/formula", "api/formula", "formula", "api/internal"]
           FileUtils.rm_rf directories + ["_data/formula_canonical.json"]
           FileUtils.mkdir_p directories
         end
@@ -44,12 +44,14 @@ module Homebrew
           Formulary.enable_factory_cache!
           Formula.generating_hash!
 
+          all_formulae = {}
           latest_macos = MacOSVersion.new((HOMEBREW_MACOS_NEWEST_UNSUPPORTED.to_i - 1).to_s).to_sym
           Homebrew::SimulateSystem.with(os: latest_macos, arch: :arm) do
             tap.formula_names.each do |name|
               formula = Formulary.factory(name)
               name = formula.name
-              json = JSON.pretty_generate(formula.to_hash_with_variations)
+              all_formulae[name] = formula.to_hash_with_variations
+              json = JSON.pretty_generate(all_formulae[name])
               html_template_name = html_template(name)
 
               unless args.dry_run?
@@ -65,6 +67,16 @@ module Homebrew
 
           canonical_json = JSON.pretty_generate(tap.formula_renames.merge(tap.alias_table))
           File.write("_data/formula_canonical.json", "#{canonical_json}\n") unless args.dry_run?
+
+          OnSystem::VALID_OS_ARCH_TAGS.each do |bottle_tag|
+            variation_formulae = all_formulae.transform_values do |formula|
+              Homebrew::API.merge_variations(formula, bottle_tag:)
+            end
+
+            unless args.dry_run?
+              File.write("api/internal/formula.#{bottle_tag}.json", JSON.pretty_generate(variation_formulae))
+            end
+          end
         end
       end
 
