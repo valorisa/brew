@@ -600,6 +600,11 @@ case "$1" in
     homebrew-version
     exit 0
     ;;
+  mcp-server)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/mcp-server.sh"
+    homebrew-mcp-server "$@"
+    exit 0
+    ;;
 esac
 
 # TODO: bump version when new macOS is released or announced and update references in:

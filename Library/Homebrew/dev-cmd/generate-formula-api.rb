@@ -69,12 +69,26 @@ module Homebrew
           File.write("_data/formula_canonical.json", "#{canonical_json}\n") unless args.dry_run?
 
           OnSystem::VALID_OS_ARCH_TAGS.each do |bottle_tag|
-            variation_formulae = all_formulae.transform_values do |formula|
-              Homebrew::API.merge_variations(formula, bottle_tag:)
+            variation_formulae = all_formulae.to_h do |name, formula|
+              formula = Homebrew::API.merge_variations(formula, bottle_tag:)
+
+              version = Version.new(formula.dig("versions", "stable"))
+              pkg_version = PkgVersion.new(version, formula["revision"])
+              rebuild = formula.dig("bottle", "stable", "rebuild") || 0
+
+              bottle_collector = Utils::Bottles::Collector.new
+              formula.dig("bottle", "stable", "files")&.each do |tag, data|
+                tag = Utils::Bottles::Tag.from_symbol(tag)
+                bottle_collector.add tag, checksum: Checksum.new(data["sha256"]), cellar: :any
+              end
+
+              sha256 = bottle_collector.specification_for(bottle_tag)&.checksum&.to_s
+
+              [name, [pkg_version.to_s, rebuild, sha256]]
             end
 
             unless args.dry_run?
-              File.write("api/internal/formula.#{bottle_tag}.json", JSON.pretty_generate(variation_formulae))
+              File.write("api/internal/formula.#{bottle_tag}.json", JSON.generate(variation_formulae))
             end
           end
         end
