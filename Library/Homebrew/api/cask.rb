@@ -1,7 +1,7 @@
 # typed: true # rubocop:todo Sorbet/StrictSigil
 # frozen_string_literal: true
 
-require "extend/cachable"
+require "cachable"
 require "api/download"
 
 module Homebrew

@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "extend/cachable"
+require "cachable"
 require "api/download"
 
 module Homebrew

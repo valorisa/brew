@@ -38,9 +38,9 @@ require "tab"
 require "mktemp"
 require "find"
 require "utils/spdx"
-require "extend/on_system"
+require "on_system"
 require "api"
-require "extend/api_hashable"
+require "api_hashable"
 
 # A formula provides instructions and metadata for Homebrew to install a piece
 # of software. Every Homebrew formula is a {Formula}.

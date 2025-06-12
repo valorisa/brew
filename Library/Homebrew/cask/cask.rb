@@ -8,7 +8,7 @@ require "cask/dsl"
 require "cask/metadata"
 require "cask/tab"
 require "utils/bottles"
-require "extend/api_hashable"
+require "api_hashable"
 
 module Cask
   # An instance of a cask.

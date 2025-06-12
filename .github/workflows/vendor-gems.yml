@@ -9,6 +9,7 @@ on:
     paths:
       - .github/workflows/vendor-gems.yml
     branches-ignore:
+      - main
       - master
   workflow_dispatch:
     inputs:

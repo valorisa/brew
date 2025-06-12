@@ -3,6 +3,7 @@ name: Update sponsors, maintainers, manpage and completions
 on:
   push:
     branches:
+      - main
       - master
     paths:
       - .github/workflows/sponsors-maintainers-man-completions.yml
@@ -60,7 +61,7 @@ jobs:
         run: |
           git fetch origin
 
-          if [[ -n "$GITHUB_REF_NAME" && "$GITHUB_REF_NAME" != "master" ]]
+          if [[ -n "$GITHUB_REF_NAME" && "$GITHUB_REF_NAME" != "master" && "$GITHUB_REF_NAME" != "main" ]]
           then
             BRANCH="$GITHUB_REF_NAME"
           else
@@ -76,7 +77,7 @@ jobs:
                          "manpages/brew.1" \
                          "completions"
           else
-            git checkout --force --no-track -B "${BRANCH}" origin/master
+            git checkout --force --no-track -B "${BRANCH}" origin/HEAD
           fi
 
           if brew update-sponsors
@@ -111,7 +112,7 @@ jobs:
           if [[ -n "${COMMITTED-}" ]]
           then
             echo "committed=true" >> "$GITHUB_OUTPUT"
-            PULL_REQUEST_STATE="$(gh pr view --json=state | jq -r ".state")"
+            PULL_REQUEST_STATE="$(gh pr view --json=state | jq -r ".state" || true)"
             if [[ "${PULL_REQUEST_STATE}" != "OPEN" ]]
             then
               echo "pull_request=true" >> "$GITHUB_OUTPUT"

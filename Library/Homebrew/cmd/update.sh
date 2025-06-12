@@ -725,30 +725,52 @@ EOS
       local tmp_failure_file="${DIR}/.git/TMP_FETCH_FAILURES"
       rm -f "${tmp_failure_file}"
 
-      if [[ -n "${HOMEBREW_UPDATE_AUTO}" ]]
+      if ! git fetch --tags --force "${QUIET_ARGS[@]}" origin \
+         "refs/heads/${UPSTREAM_BRANCH_DIR}:refs/remotes/origin/${UPSTREAM_BRANCH_DIR}" 2>>"${tmp_failure_file}"
       then
-        git fetch --tags --force "${QUIET_ARGS[@]}" origin \
-          "refs/heads/${UPSTREAM_BRANCH_DIR}:refs/remotes/origin/${UPSTREAM_BRANCH_DIR}" 2>/dev/null
-      else
-        # Capture stderr to tmp_failure_file
-        if ! git fetch --tags --force "${QUIET_ARGS[@]}" origin \
-           "refs/heads/${UPSTREAM_BRANCH_DIR}:refs/remotes/origin/${UPSTREAM_BRANCH_DIR}" 2>>"${tmp_failure_file}"
+        if [[ -f "${tmp_failure_file}" ]]
         then
-          # Reprint fetch errors to stderr
-          [[ -f "${tmp_failure_file}" ]] && cat "${tmp_failure_file}" 1>&2
-
-          if [[ "${UPSTREAM_SHA_HTTP_CODE}" == "404" ]]
+          local git_errors
+          git_errors="$(cat "${tmp_failure_file}")"
+          if [[ "${git_errors}" == "fatal: couldn't find remote ref refs/heads/master" ]]
           then
-            TAP="${DIR#"${HOMEBREW_LIBRARY}"/Taps/}"
-            echo "${TAP} does not exist! Run \`brew untap ${TAP}\` to remove it." >>"${update_failed_file}"
-          else
-            echo "Fetching ${DIR} failed!" >>"${update_failed_file}"
-
-            if [[ -f "${tmp_failure_file}" ]] &&
-               [[ "$(cat "${tmp_failure_file}")" == "fatal: couldn't find remote ref refs/heads/${UPSTREAM_BRANCH_DIR}" ]]
+            # Attempt migration from master to main branch.
+            if git fetch --tags --force "${QUIET_ARGS[@]}" origin \
+               "refs/heads/main:refs/remotes/origin/main" 2>>"${tmp_failure_file}"
             then
-              echo "${DIR}" >>"${missing_remote_ref_dirs_file}"
+              rm -f "${DIR}/.git/refs/remotes/origin/HEAD" "${DIR}/.git/refs/remotes/origin/master"
+              UPSTREAM_BRANCH_DIR="$(upstream_branch)"
+              declare UPSTREAM_BRANCH"${TAP_VAR}"="${UPSTREAM_BRANCH_DIR}"
+              git branch -m master main "${QUIET_ARGS[@]}"
+              git branch -u origin/main main "${QUIET_ARGS[@]}"
+              rm -f "${tmp_failure_file}"
+              exit
             fi
+          fi
+
+          rm -f "${tmp_failure_file}"
+        fi
+
+        # Don't output errors if HOMEBREW_UPDATE_AUTO is set.
+        if [[ -n "${HOMEBREW_UPDATE_AUTO}" ]]
+        then
+          exit
+        fi
+
+        # Reprint fetch errors to stderr
+        [[ -n "${git_errors}" ]] && echo "${git_errors}" 1>&2
+
+        if [[ "${UPSTREAM_SHA_HTTP_CODE}" == "404" ]]
+        then
+          TAP="${DIR#"${HOMEBREW_LIBRARY}"/Taps/}"
+          echo "${TAP} does not exist! Run \`brew untap ${TAP}\` to remove it." >>"${update_failed_file}"
+        else
+          echo "Fetching ${DIR} failed!" >>"${update_failed_file}"
+
+          if [[ -f "${tmp_failure_file}" ]] &&
+             [[ "$(cat "${tmp_failure_file}")" == "fatal: couldn't find remote ref refs/heads/${UPSTREAM_BRANCH_DIR}" ]]
+          then
+            echo "${DIR}" >>"${missing_remote_ref_dirs_file}"
           fi
         fi
       fi
