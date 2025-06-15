@@ -1,4 +1,4 @@
-ARG version=24.10
+ARG version=25.04
 # version is passed through by Docker.
 # shellcheck disable=SC2154
 FROM ubuntu:"${version}"
