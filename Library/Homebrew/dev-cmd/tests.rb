@@ -51,6 +51,11 @@ module Homebrew
         HOMEBREW_LIBRARY_PATH.cd do
           setup_environment!
 
+          # Needs required here, after `setup_environment!`, so that
+          # `HOMEBREW_TEST_GENERIC_OS` is set and `OS.linux?` and `OS.mac?` both
+          # `return false`.
+          require "extend/os/dev-cmd/tests"
+
           parallel = !args.no_parallel?
 
           only = args.only
@@ -127,8 +132,8 @@ module Homebrew
           bundle_args << "--tag" << "~needs_network" unless args.online?
           bundle_args << "--tag" << "~needs_ci" unless ENV["CI"]
 
-          bundle_args = os_bundle_args(bundle_args, generic: args.generic?)
-          files = os_files(files, generic: args.generic?)
+          bundle_args = os_bundle_args(bundle_args)
+          files = os_files(files)
 
           puts "Randomized with seed #{seed}"
 
@@ -156,12 +161,11 @@ module Homebrew
 
       private
 
-      sig { params(bundle_args: T::Array[String], generic: T::Boolean).returns(T::Array[String]) }
-      def os_bundle_args(bundle_args, generic:)
+      sig { params(bundle_args: T::Array[String]).returns(T::Array[String]) }
+      def os_bundle_args(bundle_args)
         # for generic tests, remove macOS or Linux specific tests
         non_linux_bundle_args(non_macos_bundle_args(bundle_args))
       end
-      alias generic_os_bundle_args os_bundle_args
 
       sig { params(bundle_args: T::Array[String]).returns(T::Array[String]) }
       def non_macos_bundle_args(bundle_args)
@@ -176,12 +180,11 @@ module Homebrew
         bundle_args << "--tag" << "~needs_linux" << "--tag" << "~needs_systemd"
       end
 
-      sig { params(files: T::Array[String], generic: T::Boolean).returns(T::Array[String]) }
-      def os_files(files, generic:)
+      sig { params(files: T::Array[String]).returns(T::Array[String]) }
+      def os_files(files)
         # for generic tests, remove macOS or Linux specific files
         non_linux_files(non_macos_files(files))
       end
-      alias generic_os_files os_files
 
       sig { params(files: T::Array[String]).returns(T::Array[String]) }
       def non_macos_files(files)
@@ -269,5 +272,3 @@ module Homebrew
     end
   end
 end
-
-require "extend/os/dev-cmd/tests"

@@ -1,8 +1,8 @@
-name: Update schema data
+name: Update SBOM schema
 on:
   push:
     paths:
-      - .github/workflows/schemas.yml
+      - .github/workflows/sbom.yml
     branches-ignore:
       - main
       - master
@@ -18,25 +18,25 @@ defaults:
     shell: bash -xeuo pipefail {0}
 
 jobs:
-  spdx:
+  sbom:
     if: github.repository == 'Homebrew/brew'
     runs-on: ubuntu-latest
     steps:
       - name: Set up Homebrew
         id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
         with:
           core: false
           cask: false
           test-bot: false
 
       - name: Configure Git user
-        uses: Homebrew/actions/git-user-config@master
+        uses: Homebrew/actions/git-user-config@main
         with:
           username: BrewTestBot
 
       - name: Set up commit signing
-        uses: Homebrew/actions/setup-commit-signing@master
+        uses: Homebrew/actions/setup-commit-signing@main
         with:
           signing_key: ${{ secrets.BREWTESTBOT_SSH_SIGNING_KEY }}
 
@@ -80,7 +80,7 @@ jobs:
 
       - name: Push commits
         if: steps.update.outputs.committed == 'true'
-        uses: Homebrew/actions/git-try-push@master
+        uses: Homebrew/actions/git-try-push@main
         with:
           token: ${{ secrets.HOMEBREW_GITHUB_PUBLIC_REPO_TOKEN }}
           directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
@@ -94,3 +94,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_PUBLIC_REPO_TOKEN }}
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+
+  issue:
+    needs: sbom
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    permissions:
+      # To create or update issues
+      issues: write
+    steps:
+      - name: Open, update, or close schema issue
+        uses: Homebrew/actions/create-or-update-issue@main
+        with:
+          title: Failed to update SBOM schema
+          body: >
+            The SBOM schema workflow [failed](${{ env.RUN_URL }}). No SBOM schema was updated.
+          labels: bug
+          update-existing: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+          close-existing: ${{ needs.sbom.result == 'success' }}
+          close-from-author: github-actions[bot]
+          close-comment: >
+            The SBOM schema workflow [succeeded](${{ env.RUN_URL }}). Closing this issue.
