@@ -469,8 +469,6 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
         ohai "Downloading #{url}"
 
         cached_location_valid = cached_location.exist?
-        v = version
-        cached_location_valid = false if v.is_a?(Cask::DSL::Version) && v.latest?
 
         resolved_url, _, last_modified, file_size, is_redirection = begin
           resolve_url_basename_time_file_size(url, timeout: Utils::Timer.remaining!(end_time))
@@ -484,7 +482,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
         # The cached location is no longer fresh if either:
         # - Last-Modified value is newer than the file's timestamp
         # - Content-Length value is different than the file's size
-        if cached_location_valid && !is_redirection
+        if cached_location_valid
           newer_last_modified = last_modified && last_modified > cached_location.mtime
           different_file_size = file_size&.nonzero? && file_size != cached_location.size
           cached_location_valid = !(newer_last_modified || different_file_size)

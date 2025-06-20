@@ -1,68 +1,88 @@
-# typed: true # rubocop:todo Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 require "digest"
 require "erb"
+require "utils/github"
 
 module Homebrew
   # Class for generating a formula from a template.
   class FormulaCreator
+    sig { returns(String) }
     attr_accessor :name
 
+    sig { returns(Version) }
+    attr_reader :version
+
+    sig { returns(T::Boolean) }
+    attr_reader :head
+
     sig {
-      params(name: T.nilable(String), version: T.nilable(String), tap: T.nilable(String), url: String,
+      params(url: String, name: T.nilable(String), version: T.nilable(String), tap: T.nilable(String),
              mode: T.nilable(Symbol), license: T.nilable(String), fetch: T::Boolean, head: T::Boolean).void
     }
-    def initialize(name, version, tap:, url:, mode:, license:, fetch:, head:)
-      @name = name
-      @version = Version.new(version) if version
-      @tap = Tap.fetch(tap || "homebrew/core")
+    def initialize(url:, name: nil, version: nil, tap: nil, mode: nil, license: nil, fetch: false, head: false)
       @url = url
-      @mode = mode
-      @license = license
-      @fetch = fetch
-      @head = head
-    end
 
-    sig { void }
-    def verify
-      raise TapUnavailableError, @tap.name unless @tap.installed?
-    end
-
-    sig { params(url: String).returns(T.nilable(String)) }
-    def self.name_from_url(url)
-      stem = Pathname.new(url).stem
-      # special cases first
-      if stem.start_with? "index.cgi"
-        # gitweb URLs e.g. http://www.codesrc.com/gitweb/index.cgi?p=libzipper.git;a=summary
-        stem.rpartition("=").last
-      elsif url =~ %r{github\.com/\S+/(\S+)/(archive|releases)/}
-        # e.g. https://github.com/stella-emu/stella/releases/download/6.7/stella-6.7-src.tar.xz
-        Regexp.last_match(1)
-      else
-        # e.g. http://digit-labs.org/files/tools/synscan/releases/synscan-5.02.tar.gz
-        pathver = Version.parse(stem).to_s
-        stem.sub(/[-_.]?#{Regexp.escape(pathver)}$/, "")
+      if name.blank?
+        stem = Pathname.new(url).stem
+        name = if stem.start_with?("index.cgi") && stem.include?("=")
+          # special cases first
+          # gitweb URLs e.g. http://www.codesrc.com/gitweb/index.cgi?p=libzipper.git;a=summary
+          stem.rpartition("=").last
+        elsif url =~ %r{github\.com/\S+/(\S+)/(archive|releases)/}
+          # e.g. https://github.com/stella-emu/stella/releases/download/6.7/stella-6.7-src.tar.xz
+          T.must(Regexp.last_match(1))
+        else
+          # e.g. http://digit-labs.org/files/tools/synscan/releases/synscan-5.02.tar.gz
+          pathver = Version.parse(stem).to_s
+          stem.sub(/[-_.]?#{Regexp.escape(pathver)}$/, "")
+        end
+        odebug "name from url: #{name}"
       end
-    end
+      @name = T.let(name, String)
 
-    sig { void }
-    def parse_url
-      @name = FormulaCreator.name_from_url(@url) if @name.blank?
-      odebug "name_from_url: #{@name}"
-      @version = Version.detect(@url) if @version.nil?
+      version = if version.present?
+        Version.new(version)
+      else
+        Version.detect(url)
+      end
+      @version = T.let(version, Version)
 
-      case @url
+      tap = if tap.blank?
+        CoreTap.instance
+      else
+        Tap.fetch(tap)
+      end
+      @tap = T.let(tap, Tap)
+
+      @mode = T.let(mode.presence, T.nilable(Symbol))
+      @license = T.let(license.presence, T.nilable(String))
+      @fetch = fetch
+
+      case url
       when %r{github\.com/(\S+)/(\S+)\.git}
-        @head = true
+        head = true
         user = Regexp.last_match(1)
-        repo = Regexp.last_match(2)
-        @github = GitHub.repository(user, repo) if @fetch
+        repository = Regexp.last_match(2)
+        github = GitHub.repository(user, repository) if fetch
       when %r{github\.com/(\S+)/(\S+)/(archive|releases)/}
         user = Regexp.last_match(1)
-        repo = Regexp.last_match(2)
-        @github = GitHub.repository(user, repo) if @fetch
+        repository = Regexp.last_match(2)
+        github = GitHub.repository(user, repository) if fetch
       end
+      @head = head
+      @github = T.let(github, T.untyped)
+
+      @sha256 = T.let(nil, T.nilable(String))
+      @desc = T.let(nil, T.nilable(String))
+      @homepage = T.let(nil, T.nilable(String))
+      @license = T.let(nil, T.nilable(String))
+    end
+
+    sig { void }
+    def verify_tap_available!
+      raise TapUnavailableError, @tap.name unless @tap.installed?
     end
 
     sig { returns(Pathname) }
@@ -91,7 +111,7 @@ module Homebrew
             raise "Downloaded URL is not archive"
           end
 
-          @sha256 = filepath.sha256
+          @sha256 = T.let(filepath.sha256, T.nilable(String))
         end
 
         if @github
@@ -106,6 +126,8 @@ module Homebrew
       path
     end
 
+    private
+
     sig { params(name: String).returns(String) }
     def latest_versioned_formula(name)
       name_prefix = "#{name}@"
@@ -116,8 +138,6 @@ module Homebrew
 
     sig { returns(String) }
     def template
-      # FIXME: https://github.com/errata-ai/vale/issues/818
-      # <!-- vale off -->
       <<~ERB
         # Documentation: https://docs.brew.sh/Formula-Cookbook
         #                https://rubydoc.brew.sh/Formula
@@ -261,7 +281,6 @@ module Homebrew
           end
         end
       ERB
-      # <!-- vale on -->
     end
   end
 end
