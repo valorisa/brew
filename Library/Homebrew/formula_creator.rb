@@ -23,31 +23,9 @@ module Homebrew
     }
     def initialize(url:, name: nil, version: nil, tap: nil, mode: nil, license: nil, fetch: false, head: false)
       @url = url
-
-      if name.blank?
-        stem = Pathname.new(url).stem
-        name = if stem.start_with?("index.cgi") && stem.include?("=")
-          # special cases first
-          # gitweb URLs e.g. http://www.codesrc.com/gitweb/index.cgi?p=libzipper.git;a=summary
-          stem.rpartition("=").last
-        elsif url =~ %r{github\.com/\S+/(\S+)/(archive|releases)/}
-          # e.g. https://github.com/stella-emu/stella/releases/download/6.7/stella-6.7-src.tar.xz
-          T.must(Regexp.last_match(1))
-        else
-          # e.g. http://digit-labs.org/files/tools/synscan/releases/synscan-5.02.tar.gz
-          pathver = Version.parse(stem).to_s
-          stem.sub(/[-_.]?#{Regexp.escape(pathver)}$/, "")
-        end
-        odebug "name from url: #{name}"
-      end
-      @name = T.let(name, String)
-
-      version = if version.present?
-        Version.new(version)
-      else
-        Version.detect(url)
-      end
-      @version = T.let(version, Version)
+      @mode = mode
+      @license = license
+      @fetch = fetch
 
       tap = if tap.blank?
         CoreTap.instance
@@ -56,23 +34,58 @@ module Homebrew
       end
       @tap = T.let(tap, Tap)
 
-      @mode = T.let(mode.presence, T.nilable(Symbol))
-      @license = T.let(license.presence, T.nilable(String))
-      @fetch = fetch
-
-      case url
-      when %r{github\.com/(\S+)/(\S+)\.git}
-        head = true
-        user = Regexp.last_match(1)
-        repository = Regexp.last_match(2)
-        github = GitHub.repository(user, repository) if fetch
-      when %r{github\.com/(\S+)/(\S+)/(archive|releases)/}
-        user = Regexp.last_match(1)
-        repository = Regexp.last_match(2)
-        github = GitHub.repository(user, repository) if fetch
+      if (match_github = url.match %r{github\.com/(?<user>[^/]+)/(?<repo>[^/]+).*})
+        user = T.must(match_github[:user])
+        repository = T.must(match_github[:repo])
+        if repository.end_with?(".git")
+          # e.g. https://github.com/Homebrew/brew.git
+          repository.delete_suffix!(".git")
+          head = true
+        end
+        odebug "github: #{user} #{repository} head:#{head}"
+        if name.blank?
+          name = repository
+          odebug "name from github: #{name}"
+        end
+      elsif name.blank?
+        stem = Pathname.new(url).stem
+        name = if stem.start_with?("index.cgi") && stem.include?("=")
+          # special cases first
+          # gitweb URLs e.g. http://www.codesrc.com/gitweb/index.cgi?p=libzipper.git;a=summary
+          stem.rpartition("=").last
+        else
+          # e.g. http://digit-labs.org/files/tools/synscan/releases/synscan-5.02.tar.gz
+          pathver = Version.parse(stem).to_s
+          stem.sub(/[-_.]?#{Regexp.escape(pathver)}$/, "")
+        end
+        odebug "name from url: #{name}"
       end
+      @name = T.let(name, String)
       @head = head
+
+      if version.present?
+        version = Version.new(version)
+        odebug "version from user: #{version}"
+      else
+        version = Version.detect(url)
+        odebug "version from url: #{version}"
+      end
+
+      if fetch && user && repository
+        github = GitHub.repository(user, repository)
+
+        if version.null? && !head
+          begin
+            latest_release = GitHub.get_latest_release(user, repository)
+            version = Version.new(latest_release.fetch("tag_name"))
+            odebug "github: version from latest_release: #{version}"
+          rescue GitHub::API::HTTPNotFoundError
+            odebug "github: latest_release lookup failed: #{url}"
+          end
+        end
+      end
       @github = T.let(github, T.untyped)
+      @version = T.let(version, Version)
 
       @sha256 = T.let(nil, T.nilable(String))
       @desc = T.let(nil, T.nilable(String))

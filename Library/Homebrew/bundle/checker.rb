@@ -1,4 +1,4 @@
-# typed: false # rubocop:todo Sorbet/TrueSigil
+# typed: true
 # frozen_string_literal: true
 
 module Homebrew
@@ -23,7 +23,7 @@ module Homebrew
           else
             "needs to be installed or updated."
           end
-          "#{self.class::PACKAGE_TYPE_NAME} #{name} #{reason}"
+          "#{self.class.const_get(:PACKAGE_TYPE_NAME)} #{name} #{reason}"
         end
 
         def full_check(packages, no_upgrade:)
@@ -33,7 +33,7 @@ module Homebrew
 
         def checkable_entries(all_entries)
           require "bundle/skipper"
-          all_entries.select { |e| e.type == self.class::PACKAGE_TYPE }
+          all_entries.select { |e| e.type == self.class.const_get(:PACKAGE_TYPE) }
                      .reject(&Bundle::Skipper.method(:skip?))
         end
 
