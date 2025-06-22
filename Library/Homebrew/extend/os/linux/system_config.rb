@@ -51,7 +51,7 @@ module OS
           out.puts "Host glibc: #{host_glibc_version}"
           out.puts "#{::DevelopmentTools.host_gcc_path}: #{host_gcc_version}"
           out.puts "/usr/bin/ruby: #{host_ruby_version}" if RUBY_PATH != HOST_RUBY_PATH
-          ["glibc", CompilerSelector.preferred_gcc, OS::LINUX_PREFERRED_GCC_RUNTIME_FORMULA, "xorg"].each do |f|
+          ["glibc", ::CompilerSelector.preferred_gcc, OS::LINUX_PREFERRED_GCC_RUNTIME_FORMULA, "xorg"].each do |f|
             out.puts "#{f}: #{formula_linked_version(f)}"
           end
         end

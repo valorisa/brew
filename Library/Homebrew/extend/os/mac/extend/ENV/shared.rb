@@ -41,7 +41,7 @@ module OS
         # This is supported starting Xcode 13, which ships ld64-711.
         # https://developer.apple.com/documentation/xcode-release-notes/xcode-13-release-notes
         # https://en.wikipedia.org/wiki/Xcode#Xcode_11.0_-_14.x_(since_SwiftUI_framework)_2
-        OS::Mac::DevelopmentTools.ld64_version >= 711
+        ::DevelopmentTools.ld64_version >= 711
       end
     end
   end
