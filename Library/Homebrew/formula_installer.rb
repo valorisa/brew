@@ -420,7 +420,8 @@ class FormulaInstaller
     invalid_arch_dependencies = []
     pinned_unsatisfied_deps = []
     recursive_deps.each do |dep|
-      if (tab = Tab.for_formula(dep.to_formula)) && tab.arch.present? && tab.arch.to_s != Hardware::CPU.arch.to_s
+      tab = Tab.for_formula(dep.to_formula)
+      if tab.arch.present? && tab.arch.to_s != Hardware::CPU.arch.to_s
         invalid_arch_dependencies << "#{dep} was built for #{tab.arch}"
       end
 

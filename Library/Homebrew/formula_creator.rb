@@ -165,7 +165,7 @@ module Homebrew
         <% unless @head %>
           url "#{@url}"
         <% unless @version.detected_from_url? %>
-          version "#{@version}"
+          version "#{@version.to_s.delete_prefix("v")}"
         <% end %>
           sha256 "#{@sha256}"
         <% end %>

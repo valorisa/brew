@@ -1,4 +1,4 @@
-# typed: true
+# typed: false # rubocop:todo Sorbet/TrueSigil
 # frozen_string_literal: true
 
 require "json"
@@ -189,12 +189,7 @@ module Homebrew
 
       class Topo < Hash
         include TSort
-
-        def each_key(&block)
-          keys.each(&block)
-        end
         alias tsort_each_node each_key
-
         def tsort_each_child(node, &block)
           fetch(node.downcase).sort.each(&block)
         end
@@ -235,8 +230,8 @@ module Homebrew
 
         odie <<~EOS
           Formulae dependency graph sorting failed (likely due to a circular dependency):
-          #{cycle_first}: #{topo[cycle_first] if topo}
-          #{cycle_last}: #{topo[cycle_last] if topo}
+          #{cycle_first}: #{topo[cycle_first]}
+          #{cycle_last}: #{topo[cycle_last]}
           Please run the following commands and try again:
             brew update
             brew uninstall --ignore-dependencies --force #{cycle_first} #{cycle_last}

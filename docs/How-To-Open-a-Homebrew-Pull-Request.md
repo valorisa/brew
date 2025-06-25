@@ -104,10 +104,10 @@ To make changes on a new branch and submit it for review, create a GitHub pull r
    brew update
    ```
 
-3. Create a new branch from the latest `master` branch:
+3. Create a new branch from the latest default branch:
 
    ```sh
-   git checkout -b <YOUR_BRANCH_NAME> origin/master
+   git checkout -b <YOUR_BRANCH_NAME> origin/HEAD
    ```
 
 4. Make your changes. For formulae or casks, use `brew edit` or your favourite text editor, using the guidelines in the [Formula Cookbook](Formula-Cookbook.md) or [Cask Cookbook](Cask-Cookbook.md) for reference.

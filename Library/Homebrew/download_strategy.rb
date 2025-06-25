@@ -482,10 +482,17 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
         # The cached location is no longer fresh if either:
         # - Last-Modified value is newer than the file's timestamp
         # - Content-Length value is different than the file's size
-        if cached_location_valid
-          newer_last_modified = last_modified && last_modified > cached_location.mtime
-          different_file_size = file_size&.nonzero? && file_size != cached_location.size
-          cached_location_valid = !(newer_last_modified || different_file_size)
+        if cached_location_valid && last_modified && last_modified > cached_location.mtime
+          ohai "Ignoring #{cached_location}",
+               "Cached modified time #{cached_location.mtime.iso8601} is before" \
+               "Last-Modified header: #{last_modified.iso8601}"
+          cached_location_valid = false
+        end
+        if cached_location_valid && file_size&.nonzero? && file_size != cached_location.size
+          ohai "Ignoring #{cached_location}",
+               "Cached size #{cached_location.size} differs from " \
+               "Content-Length header: #{file_size}"
+          cached_location_valid = false
         end
 
         if cached_location_valid
@@ -1350,7 +1357,7 @@ class CVSDownloadStrategy < VCSDownloadStrategy
     end
 
     command! "cvs",
-             args:    [*quiet_flag, "-d", @url, "checkout", "-d", cached_location.basename, @module],
+             args:    [*quiet_flag, "-d", @url, "checkout", "-d", basename.to_s, @module],
              chdir:   cached_location.dirname,
              timeout: Utils::Timer.remaining(timeout)
   end
@@ -1542,7 +1549,7 @@ class FossilDownloadStrategy < VCSDownloadStrategy
   sig { override.returns(Time) }
   def source_modified_time
     out = silent_command("fossil", args: ["info", "tip", "-R", cached_location]).stdout
-    Time.parse(T.must(out[/^uuid: +\h+ (.+)$/, 1]))
+    Time.parse(T.must(out[/^(hash|uuid): +\h+ (.+)$/, 1]))
   end
 
   # Return last commit's unique identifier for the repository.
@@ -1551,7 +1558,7 @@ class FossilDownloadStrategy < VCSDownloadStrategy
   sig { override.returns(String) }
   def last_commit
     out = silent_command("fossil", args: ["info", "tip", "-R", cached_location]).stdout
-    T.must(out[/^uuid: +(\h+) .+$/, 1])
+    T.must(out[/^(hash|uuid): +(\h+) .+$/, 1])
   end
 
   sig { override.returns(T::Boolean) }

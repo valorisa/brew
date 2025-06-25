@@ -189,6 +189,13 @@ module OS
             are prone to breaking when GCC is updated. You should `brew reinstall` these formulae:
           EOS
         end
+
+        def check_cask_software_versions
+          super
+          add_info "Linux", OS::Linux.os_version
+
+          nil
+        end
       end
     end
   end

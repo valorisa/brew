@@ -908,24 +908,21 @@ module Homebrew
         EOS
       end
 
+      def check_deprecated_cask_taps
+        tapped_caskroom_taps = ::Tap.select { |t| t.user == "caskroom" || t.name == "phinze/cask" }
+                                    .map(&:name)
+        return if tapped_caskroom_taps.empty?
+
+        <<~EOS
+          You have the following deprecated Cask taps installed:
+            #{tapped_caskroom_taps.join("\n  ")}
+          Please remove them with:
+            brew untap #{tapped_caskroom_taps.join(" ")}
+        EOS
+      end
+
       def check_cask_software_versions
         add_info "Homebrew Version", HOMEBREW_VERSION
-        add_info "macOS", MacOS.full_version
-        add_info "SIP", begin
-          csrutil = "/usr/bin/csrutil"
-          if File.executable?(csrutil)
-            Open3.capture2(csrutil, "status")
-                 .first
-                 .gsub("This is an unsupported configuration, likely to break in " \
-                       "the future and leave your machine in an unknown state.", "")
-                 .gsub("System Integrity Protection status: ", "")
-                 .delete("\t.")
-                 .capitalize
-                 .strip
-          else
-            "N/A"
-          end
-        end
 
         nil
       end
@@ -1012,6 +1009,10 @@ module Homebrew
       end
 
       def check_cask_xattr
+        # If quarantine is not available, a warning is already shown by check_cask_quarantine_support so just return
+        return unless Cask::Quarantine.available?
+        return "Unable to find `xattr`." unless File.exist?("/usr/bin/xattr")
+
         result = system_command "/usr/bin/xattr", args: ["-h"]
 
         return if result.status.success?
@@ -1047,6 +1048,8 @@ module Homebrew
           "No Cask quarantine support available: there's no working version of `xattr` on this system."
         when :no_swift
           "No Cask quarantine support available: there's no available version of `swift` on this system."
+        when :linux
+          "No Cask quarantine support available: not available on Linux."
         else
           "No Cask quarantine support available: unknown reason."
         end
