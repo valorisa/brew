@@ -353,7 +353,7 @@ Now go to the [`homebrew-cask` GitHub repository](https://github.com/Homebrew/ho
 
 ##### c) manually create a pull request on GitHub
 
-Otherwise, click the `Contribute > Open pull request` button and choose to `compare across forks`. The base fork should be `Homebrew/homebrew-cask @ master`, and the head fork should be `my-github-username/homebrew-cask @ my-new-cask-branch`. You can also add any further comments to your pull request at this stage.
+Otherwise, click the `Contribute > Open pull request` button and choose to `compare across forks`. The base fork should be `Homebrew/homebrew-cask @ main`, and the head fork should be `my-github-username/homebrew-cask @ my-new-cask-branch`. You can also add any further comments to your pull request at this stage.
 
 ##### Congratulations
 
@@ -361,11 +361,11 @@ You are done now, and your cask should be pulled in or otherwise noticed in a wh
 
 ### Cleaning up
 
-After your pull request is submitted, you should get yourself back onto `master`, so that `brew update` will pull down new casks properly:
+After your pull request is submitted, you should get yourself back onto `main`, so that `brew update` will pull down new casks properly:
 
 ```bash
 cd "$(brew --repository)"/Library/Taps/homebrew/homebrew-cask
-git checkout master
+git checkout main
 ```
 
 If earlier you set the variable `HOMEBREW_NO_AUTO_UPDATE` and `HOMEBREW_NO_INSTALL_FROM_API` then clean it up with:
