@@ -236,6 +236,8 @@ module Homebrew
           verbose:                    args.verbose?,
         )
 
+        return false if formulae_installer.blank?
+
         dependants = Upgrade.dependants(
           formulae_to_install,
           flags:                      args.flags_only,

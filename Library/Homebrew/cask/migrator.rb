@@ -80,7 +80,6 @@ module Cask
       when ".json"
         json = JSON.parse(path.read)
         json["token"] = new_token
-        json["old_tokens"] = [old_token, *json["old_tokens"]].compact.uniq
         path.atomic_write json.to_json
       end
     end

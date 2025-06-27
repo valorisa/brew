@@ -313,6 +313,19 @@ module Homebrew
         skip_post_install: false,
         skip_link: false
       )
+        unless dry_run
+          formula_installers.each do |fi|
+            fi.prelude
+            fi.fetch
+          rescue CannotInstallFormulaError => e
+            ofail e.message
+            next
+          rescue UnsatisfiedRequirements, DownloadError, ChecksumMismatchError => e
+            ofail "#{fi.formula}: #{e}"
+            next
+          end
+        end
+
         if dry_run
           if (formulae_name_to_install = formula_installers.map(&:name))
             ohai "Would install #{Utils.pluralize("formula", formulae_name_to_install.count,
@@ -327,18 +340,6 @@ module Homebrew
         end
 
         formula_installers.each do |fi|
-          begin
-            unless dry_run
-              fi.prelude
-              fi.fetch
-            end
-          rescue CannotInstallFormulaError => e
-            ofail e.message
-            next
-          rescue UnsatisfiedRequirements, DownloadError, ChecksumMismatchError => e
-            ofail "#{formula}: #{e}"
-            next
-          end
           install_formula(fi)
           Cleanup.install_formula_clean!(fi.formula)
         end

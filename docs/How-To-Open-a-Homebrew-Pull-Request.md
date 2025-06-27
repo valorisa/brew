@@ -92,13 +92,13 @@ Before creating a new cask, please read [Acceptable Casks](Acceptable-Casks.md).
 
 To make changes on a new branch and submit it for review, create a GitHub pull request with the following steps:
 
-1. Check out the `master` branch:
+1. Check out the `main` branch:
 
    ```sh
-   git checkout master
+   git checkout main
    ```
 
-2. Retrieve new changes to the `master` branch:
+2. Retrieve new changes to the `main` branch:
 
    ```sh
    brew update
@@ -157,7 +157,7 @@ To make changes based on feedback:
 3. Squash new commits into one commit per formula:
 
    ```sh
-   git rebase --interactive origin/master
+   git rebase --interactive origin/HEAD
    ```
 
    * If you are working on a PR for a single formula, `git commit --amend` is a convenient way of keeping your commits squashed as you go.

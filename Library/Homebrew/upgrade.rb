@@ -390,8 +390,6 @@ module Homebrew
           quiet:,
           verbose:,
         )
-        puts "here", dependent_installers
-        puts "here", upgradeable
         upgrade_formulae(dependent_installers, dry_run: dry_run, verbose: verbose)
       end
 

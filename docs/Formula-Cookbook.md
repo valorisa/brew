@@ -1332,9 +1332,9 @@ Packages requiring BLAS/LAPACK linear algebra interfaces should link to [OpenBLA
 
 ## How to start over (reset to upstream)
 
-Have you created a real mess in Git which stops you from creating a commit you want to submit to us? You might want to consider starting again from scratch. Your changes to the Homebrew `master` branch can be reset by running:
+Have you created a real mess in Git which stops you from creating a commit you want to submit to us? You might want to consider starting again from scratch. Your changes to the Homebrew `main` branch can be reset by running:
 
 ```sh
-git checkout -f master
+git checkout -f main
 git reset --hard origin/HEAD
 ```

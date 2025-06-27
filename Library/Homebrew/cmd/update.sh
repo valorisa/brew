@@ -252,6 +252,14 @@ EOS
   fi
 
   INITIAL_BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null)"
+  if [[ "${INITIAL_BRANCH}" == "master" &&
+        ("${DIR}" == "${HOMEBREW_REPOSITORY}" || "${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" || "${DIR}" == "${HOMEBREW_CASK_REPOSITORY}") ]]
+  then
+    # Migrate master to main for Homebrew/brew, homebrew-core or homebrew-cask
+    INITIAL_BRANCH="main"
+    SOFT_DELETE_MASTER="1"
+  fi
+
   if [[ -n "${UPSTREAM_TAG}" ]] ||
      [[ "${INITIAL_BRANCH}" != "${UPSTREAM_BRANCH}" && -n "${INITIAL_BRANCH}" ]]
   then
@@ -326,6 +334,11 @@ EOS
     pop_stash
   else
     pop_stash_message
+  fi
+
+  if [[ "${SOFT_DELETE_MASTER}" == 1 && -n "$(git config branch.main.remote 2>/dev/null || true)" ]]
+  then
+    git branch -d "${QUIET_ARGS[@]}" master
   fi
 
   trap - SIGINT
