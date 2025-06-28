@@ -115,16 +115,16 @@ module Homebrew
       def support_tier_message(tier:)
         return if tier.to_s == "1"
 
-        tier_title, tier_slug = if tier.to_s == "unsupported"
-          ["Unsupported", "unsupported"]
+        tier_title, tier_slug, tier_issues = if tier.to_s == "unsupported"
+          ["Unsupported", "unsupported", "Do not report any"]
         else
-          ["Tier #{tier}", "tier-#{tier.to_s.downcase}"]
+          ["Tier #{tier}", "tier-#{tier.to_s.downcase}", "You can report Tier #{tier} unrelated"]
         end
 
         <<~EOS
           This is a #{tier_title} configuration:
             #{Formatter.url("https://docs.brew.sh/Support-Tiers##{tier_slug}")}
-          #{Formatter.bold("Do not report any issues to Homebrew/* repositories!")}
+          #{Formatter.bold("#{tier_issues} issues to Homebrew/* repositories!")}
           Read the above document instead before opening any issues or PRs.
         EOS
       end
