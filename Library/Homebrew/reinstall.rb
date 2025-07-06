@@ -84,7 +84,7 @@ module Homebrew
       keg = install_context.keg
       formula = install_context.formula
       options = install_context.options
-      link_keg = keg.linked?
+      link_keg = keg&.linked?
       formula_installer.prelude
       formula_installer.fetch
 

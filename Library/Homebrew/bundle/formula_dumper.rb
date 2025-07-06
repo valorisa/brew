@@ -7,7 +7,7 @@ require "tsort"
 module Homebrew
   module Bundle
     # TODO: refactor into multiple modules
-    module BrewDumper
+    module FormulaDumper
       def self.reset!
         require "bundle/brew_services"
 

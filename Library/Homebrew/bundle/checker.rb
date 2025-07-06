@@ -139,14 +139,14 @@ module Homebrew
 
       def self.reset!
         require "bundle/cask_dumper"
-        require "bundle/brew_dumper"
+        require "bundle/formula_dumper"
         require "bundle/mac_app_store_dumper"
         require "bundle/tap_dumper"
         require "bundle/brew_services"
 
         @dsl = nil
         Homebrew::Bundle::CaskDumper.reset!
-        Homebrew::Bundle::BrewDumper.reset!
+        Homebrew::Bundle::FormulaDumper.reset!
         Homebrew::Bundle::MacAppStoreDumper.reset!
         Homebrew::Bundle::TapDumper.reset!
         Homebrew::Bundle::BrewServices.reset!

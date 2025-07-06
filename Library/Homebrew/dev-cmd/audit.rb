@@ -42,8 +42,8 @@ module Homebrew
         switch "--installed",
                description: "Only check formulae and casks that are currently installed."
         switch "--eval-all",
-               description: "Evaluate all available formulae and casks, whether installed or not, to audit them. " \
-                            "Implied if `$HOMEBREW_EVAL_ALL` is set."
+               description: "Evaluate all available formulae and casks, whether installed or not, to audit them.",
+               env:         :eval_all
         switch "--new",
                description: "Run various additional style checks to determine if a new formula or cask is eligible " \
                             "for Homebrew. This should be used when creating new formulae or casks and implies " \
@@ -137,15 +137,17 @@ module Homebrew
             no_named_args = true
             [Formula.installed, Cask::Caskroom.casks]
           elsif args.no_named?
-            if !args.eval_all? && !Homebrew::EnvConfig.eval_all?
+            eval_all = args.eval_all?
+
+            unless eval_all
               # This odisabled should probably stick around indefinitely.
               odisabled "brew audit",
                         "brew audit --eval-all or HOMEBREW_EVAL_ALL"
             end
             no_named_args = true
             [
-              Formula.all(eval_all: args.eval_all?),
-              Cask::Cask.all(eval_all: args.eval_all?),
+              Formula.all(eval_all:),
+              Cask::Cask.all(eval_all:),
             ]
           else
             if args.named.any? { |named_arg| named_arg.end_with?(".rb") }

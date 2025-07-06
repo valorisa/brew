@@ -780,35 +780,9 @@ no_autobump! because: "some unique reason"
 
 More information about the autobump process can be found on the [Autobump](Autobump.md) page.
 
-### Unstable versions (`head`)
-
-Formulae can specify an alternate download for the upstream project’s development cutting-edge source (e.g. `main`/`master`/`trunk`) using [`head`](https://rubydoc.brew.sh/Formula#head-class_method), which can be activated by passing `--HEAD` when installing. Specifying it is done in the same manner as [`url`](https://rubydoc.brew.sh/Formula#url-class_method):
-
-```ruby
-class Foo < Formula
-  # ...
-  head "https://github.com/some/package.git", branch: "main" # the default is "master"
-end
-```
-
-You can also bundle the URL and any `head`-specific dependencies and resources in a `head do` block.
-
-```ruby
-class Foo < Formula
-  # ...
-
-  head do
-    url "https://svn.code.sf.net/p/project/code/trunk"
-    depends_on "pkg-config" => :build
-  end
-end
-```
-
-You can test whether the [`head`](https://rubydoc.brew.sh/Formula#head-class_method) is being built with `build.head?` in the `install` method.
-
 ### URL download strategies
 
-When parsing a download URL, Homebrew auto-detects the resource type it points to, whether archive (e.g. tarball, zip) or version control repository (e.g. Git, SVN, Mercurial) and chooses an appropriate download strategy. Some strategies can be passed additional options to alter what's downloaded. For example, to use a specific commit, tag, or branch from a repository, specify [`url`](https://rubydoc.brew.sh/Formula#url-class_method) or [`head`](https://rubydoc.brew.sh/Formula#head-class_method) with the `:tag` and `:revision`, `:revision`, or `:branch` options, like so:
+When parsing a download URL, Homebrew auto-detects the resource type it points to, whether archive (e.g. tarball, zip) or version control repository (e.g. Git, Subversion, Mercurial) and chooses an appropriate download strategy. Some strategies can be passed additional options to alter what's downloaded. For example, to fetch a formula's source code and infer its version number from a specific tag in a Git repository (useful for packages that rely on Git submodules), specify [`url`](https://rubydoc.brew.sh/Formula#url-class_method) with the `:tag` and `:revision` options, like so:
 
 ```ruby
 class Foo < Formula
@@ -819,7 +793,28 @@ class Foo < Formula
 end
 ```
 
-If not inferable, specify which of Homebrew’s built-in download strategies to use with the `using:` option. For example:
+If fetching from a Subversion or Mercurial repository, specify `revision` and `version` separately:
+
+```ruby
+class Bar < Formula
+  # ...
+  url "https://svn.code.sf.net/p/package/code/stable", revision: "4687"
+  version "12.1.8"
+end
+```
+
+To fetch specific revisions of Subversion externals, specify `revisions`:
+
+```ruby
+class Baz < Formula
+  # ...
+  url "svn://source.something.org/package/trunk/",
+      revisions: { trunk: "22916", "libsomething" => "31045" }
+  version "7.2.11"
+end
+```
+
+If not inferable, specify which of Homebrew's built-in download strategies to use with the `using:` option. For example:
 
 ```ruby
 class Nginx < Formula
@@ -833,18 +828,18 @@ end
 
 Homebrew offers these anonymous download strategies.
 
-| `:using` value   | download strategy             |
-| ---------------- | ----------------------------- |
-| `:bzr`           | `BazaarDownloadStrategy` |
-| `:curl`          | `CurlDownloadStrategy` |
-| `:cvs`           | `CVSDownloadStrategy` |
-| `:fossil`        | `FossilDownloadStrategy` |
-| `:git`           | `GitDownloadStrategy` |
-| `:hg`            | `MercurialDownloadStrategy` |
-| `:homebrew_curl` | `HomebrewCurlDownloadStrategy` |
-| `:nounzip`       | `NoUnzipCurlDownloadStrategy` |
-| `:post`          | `CurlPostDownloadStrategy` |
-| `:svn`           | `SubversionDownloadStrategy` |
+| `using:` value   | download strategy                | requirements |
+| ---------------- | -------------------------------- | ------------ |
+| `:bzr`           | fetch from Bazaar repository     | `breezy` installed |
+| `:curl`          | download using `curl` (default)  | |
+| `:cvs`           | fetch from CVS repository        | `cvs` installed |
+| `:fossil`        | fetch from Fossil repository     | `fossil` installed |
+| `:git`           | fetch from Git repository        | `git` installed |
+| `:hg`            | fetch from Mercurial repository  | `hg` installed |
+| `:homebrew_curl` | download using brewed `curl`     | `curl` installed |
+| `:nounzip`       | download without decompressing   | |
+| `:post`          | download using `curl` via POST   | `data:` [hash of parameters](Cask-Cookbook.md#additional-url-parameters) |
+| `:svn`           | fetch from Subversion repository | `svn` installed |
 
 If you need more control over the way files are downloaded and staged, you can create a custom download strategy and specify it with the `:using` option:
 
@@ -861,6 +856,42 @@ class Foo < Formula
   url "something", using: MyDownloadStrategy
 end
 ```
+
+### Unstable versions (`head`)
+
+Formulae can specify an alternate download for the upstream project's development/cutting-edge source (e.g. `master`/`main`/`trunk`) using [`head`](https://rubydoc.brew.sh/Formula#head-class_method), which can be activated by passing `--HEAD` when installing. Specifying it is done in the same manner as [`url`](https://rubydoc.brew.sh/Formula#url-class_method), with added conventions for fetching from version control repositories:
+
+* Git repositories need `branch:` specified to fetch a branch other than "master". If the repository is very large, specify `only_path` to [limit the checkout to one path](Cask-Cookbook.md#git-urls).
+
+  ```sh
+head "https://github.com/some/package.git", branch: "main"
+  ```
+
+* Mercurial repositories need `branch:` specified to fetch a branch other than "default".
+
+* Subversion repositories can specify `trust_cert: true` to [skip interactive certificate prompts](Cask-Cookbook.md#subversion-urls).
+
+* CVS repositories can specify `module:` to check out a specific module.
+
+You can also bundle the URL and any `head`-specific dependencies and resources in a `head do` block.
+
+```ruby
+class Foo < Formula
+  # ...
+
+  head do
+    url "https://hg.sr.ht/~user/foo", using: :hg, branch: "develop"
+
+    depends_on "pkg-config" => :build
+
+    resource "package" do
+      url "https://github.com/other/package.git", branch: "main"
+    end
+  end
+end
+```
+
+You can test whether the [`head`](https://rubydoc.brew.sh/Formula#head-class_method) is being built with `build.head?` in the `install` method.
 
 ### Compiler selection
 
