@@ -550,7 +550,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
     return @resolved_info_cache.fetch(url) if @resolved_info_cache.include?(url)
 
     begin
-      parsed_output = curl_headers(url.to_s, wanted_headers: ["content-disposition", "content-type"], timeout:)
+      parsed_output = curl_headers(url.to_s, wanted_headers: ["content-disposition"], timeout:)
     rescue ErrorDuringExecution
       return [url, parse_basename(url), nil, nil, nil, false]
     end
